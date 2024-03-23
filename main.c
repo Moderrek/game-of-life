@@ -76,6 +76,8 @@ void init_game(const int width, const int height) {
 
   while (1) {
     show(board, width, height);
+    for (int x = 0; x < width; x++) fprintf(stdout, "=");
+    fprintf(stdout, "\n");
     simulate(board, width, height);
     wait(1);
   }
