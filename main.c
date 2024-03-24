@@ -1,14 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
 
 #ifdef __unix__
 #define LINUX
 #include <unistd.h>
+#define BLACK_BG "\x1b[40m"
+#define WHITE_BG "\x1b[47m"
+#define ROW_END "\x1b[0m"
+#define ALIVE_CELL WHITE_BG" "
+#define DEAD_CELL BLACK_BG" "
 #elif defined(_WIN32) || defined(WIN32)
 #define WINDOWS
 #include <windows.h>
+#define ALIVE_CELL " "
+#define DEAD_CELL  " "
 #endif
+
+static volatile sig_atomic_t running = 1;
+
+static void signal_handler(const int _) {
+  (void)_;
+  running = 0;
+  fprintf(stdout, "Game ended.\n");
+}
 
 void wait(const int seconds) {
 #ifdef LINUX
@@ -20,9 +36,19 @@ void wait(const int seconds) {
 
 void show(const void* arr, const int width, const int height) {
   const unsigned (*board)[width] = arr;
+#ifdef WINDOWS
+  const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+#endif
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      fprintf(stdout, board[y][x] ? "*" : " ");
+      unsigned alive = board[y][x];
+#ifdef WINDOWS
+      SetConsoleTextAttribute(hConsole, alive ? 255 : 0);
+      fprintf(stdout, "%s", board[y][x] ? ALIVE_CELL : DEAD_CELL);
+      SetConsoleTextAttribute(hConsole, 15);
+#else
+      fprintf(stdout, "%s%s", alive ? ALIVE_CELL : DEAD_CELL, ROW_END);
+#endif
     }
     fprintf(stdout, "\n");
   }
@@ -65,6 +91,8 @@ void simulate(void* arr, const int width, const int height) {
 }
 
 void init_game(const int width, const int height) {
+  running = 1;
+
   unsigned board[width][height];
 
   srand(time(NULL));
@@ -74,7 +102,7 @@ void init_game(const int width, const int height) {
     }
   }
 
-  while (1) {
+  while (running) {
     show(board, width, height);
     for (int x = 0; x < width; x++) fprintf(stdout, "=");
     fprintf(stdout, "\n");
@@ -84,6 +112,7 @@ void init_game(const int width, const int height) {
 }
 
 int main(void) {
+  signal(SIGINT, signal_handler);
   init_game(50, 25);
-  return 0;
+  return EXIT_SUCCESS;
 }
