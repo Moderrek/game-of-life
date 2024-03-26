@@ -34,6 +34,12 @@ void wait(const int seconds) {
 #endif
 }
 
+void clear() {
+#ifdef WINDOWS
+  system("cls");
+#endif
+}
+
 void show(const void* arr, const int width, const int height) {
   const unsigned (*board)[width] = arr;
 #ifdef WINDOWS
@@ -103,9 +109,8 @@ void init_game(const int width, const int height) {
   }
 
   while (running) {
+    clear();
     show(board, width, height);
-    for (int x = 0; x < width; x++) fprintf(stdout, "=");
-    fprintf(stdout, "\n");
     simulate(board, width, height);
     wait(1);
   }
